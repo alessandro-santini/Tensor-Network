@@ -64,11 +64,11 @@ def expm_krylov_lanczos(Afunc, v, dt, numiter):
     alpha, beta, V = lanczos_iteration(Afunc, v, numiter)
 
     # diagonalize Hessenberg matrix
-    w_hess, u_hess = eigh_tridiagonal(alpha, beta)
+    w_hess, u_hess = np.linalg.eigh(np.diag(alpha) + np.diag(beta,1) + np.diag(beta,-1))
 
     return np.dot(V, np.dot(u_hess, np.linalg.norm(v) * np.exp(dt*w_hess) * u_hess[0]))
 
 def optimize_lanczos(Afunc,v,numiter):
     alpha, beta, V = lanczos_iteration(Afunc, v, numiter)
-    eig, w = eigh_tridiagonal(alpha, beta)
+    eig, w = np.linalg.eigh(np.diag(alpha) + np.diag(beta,1) + np.diag(beta,-1))
     return V@w[:,0], eig[0]

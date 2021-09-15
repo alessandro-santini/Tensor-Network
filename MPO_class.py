@@ -3,7 +3,7 @@ import numpy.linalg as LA
 from ncon import ncon
 import contraction_utilities as contract
 from scipy.linalg import expm
-
+import MPS_class as MPS_
 
 class MPO:
     def __init__(self,L,d):
@@ -84,6 +84,24 @@ def getStagMzMPO(L):
         mz[1,1,:,:] = Id
         sMzMPO.W[i] = mz
     return sMzMPO
+
+def return_LocalMz(MPS):
+    L = MPS.L
+    tempMPS = MPS_.MPS(L,2,2)
+    tempMPS.M = MPS.M.copy()
+    sigma_z  = np.array([[1, 0], [0,-1]])
+    mz = np.zeros(L,complex)
+    
+    mz[0] = ncon([tempMPS.M[0],sigma_z,tempMPS.M[0].conj()],[[1,2,3],[2,4],[1,4,3]])       
+    for i in range(L-1):
+            M = tempMPS.M[i]
+            shpM = M.shape
+            U, S, V = LA.svd(M.reshape(shpM[0]*shpM[1], shpM[2]), full_matrices=False)
+            S /= LA.norm(S)
+            tempMPS.M[i] =  U.reshape(shpM[0], shpM[1], S.size)
+            tempMPS.M[i+1] = ncon([np.diag(S)@V, tempMPS.M[i+1]],[[-1,1],[1,-2,-3]])            
+            mz[i+1] = ncon([tempMPS.M[i+1],sigma_z,tempMPS.M[i+1].conj()],[[1,2,3],[2,4],[1,4,3]])       
+    return mz
 
 def getLocalMzMPO(L, i):
     LMz = MPO(L, 2)

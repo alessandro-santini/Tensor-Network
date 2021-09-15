@@ -27,11 +27,13 @@ def local_exponentiation(method,M,L,H,R,delta,maxit=10):
     return v/LA.norm(v)
     
 class TDVP2:
-    def __init__(self,MPS_,H):
+    def __init__(self,MPS_,H,chi_MAX=64):
         self.MPS = MPS.MPS(MPS_.L,MPS_.chim,MPS_.d)
         self.MPS.M = MPS_.M.copy()
         self.MPO = H
         self.L = self.MPS.L
+        self.chi_MAX = chi_MAX
+        self.end_max = False
         
     def initialize(self):
         L = self.L
@@ -46,8 +48,8 @@ class TDVP2:
         for j in range(L-1,0,-1):
             self.RT[j] = contract.contract_right(self.MPS.M[j], self.MPO.W[j], self.MPS.M[j].conj(), self.RT[j+1])
        
-    def right_sweep(self,delta):
-        for i in range(self.L-2):
+    def right_sweep(self,delta,krydim=10):
+        for i in range(self.L-1):
             
             M = ncon([self.MPS.M[i],self.MPS.M[i+1]],[[-1,-2,1],[1,-3,-4]])
             shpMi = self.MPS.M[i].shape
@@ -59,7 +61,7 @@ class TDVP2:
             W = ncon([self.MPO.W[i],self.MPO.W[i+1]],[[-1,1,-3,-5],[1,-2,-4,-6]])
             W = W.reshape(shpWi[0],shpWj[1],shpWi[2]*shpWj[2],shpWi[3]*shpWj[3])
             
-            psi = local_exponentiation('H',M, self.LT[i-1], W, self.RT[i+2],delta)
+            psi = local_exponentiation('H',M, self.LT[i-1], W, self.RT[i+2],delta,krydim)
             
             M = psi.reshape(shpMi[0]*shpMi[1],shpMj[1]*shpMj[2])
             
@@ -71,6 +73,9 @@ class TDVP2:
                 chi = indices[0]+1
             else:
                 chi = S.size
+            if chi > self.chi_MAX:
+                chi = self.chi_MAX
+                self.end_max = True
                 
             # Truncation
             if S.size > chi:
@@ -86,9 +91,9 @@ class TDVP2:
             self.MPS.M[i+1] = (np.diag(S)@V).reshape(S.size,shpMj[1],shpMj[2])
             if i != self.L-2:
                 shpMj = self.MPS.M[i+1].shape
-                self.MPS.M[i+1] = local_exponentiation('H', self.MPS.M[i+1], self.LT[i], self.MPO.W[i+1], self.RT[i+2], -delta).reshape(shpMj)
+                self.MPS.M[i+1] = local_exponentiation('H', self.MPS.M[i+1], self.LT[i], self.MPO.W[i+1], self.RT[i+2], -delta,krydim).reshape(shpMj)
             
-    def left_sweep(self,delta):
+    def left_sweep(self,delta,krydim):
         for i in range(self.L-1, 0, -1):
             
             M = ncon([self.MPS.M[i-1],self.MPS.M[i]],[[-1,-2,1],[1,-3,-4]])
@@ -101,7 +106,7 @@ class TDVP2:
             W = ncon([self.MPO.W[i-1],self.MPO.W[i]],[[-1,1,-3,-5],[1,-2,-4,-6]])
             W = W.reshape(shpWi[0],shpWj[1],shpWi[2]*shpWj[2],shpWi[3]*shpWj[3])
             
-            psi = local_exponentiation('H',M, self.LT[i-2], W, self.RT[i+1],delta)         
+            psi = local_exponentiation('H',M, self.LT[i-2], W, self.RT[i+1],delta,krydim)         
             M = psi.reshape(shpMi[0]*shpMi[1],shpMj[1]*shpMj[2])
             
             U,S,V = LA.svd(M,full_matrices=False)
@@ -112,6 +117,9 @@ class TDVP2:
                 chi = indices[0]+1
             else:
                 chi = S.size
+            if chi > self.chi_MAX:
+                chi = self.chi_MAX
+                self.end_max = True
                 
             # Truncation
             if S.size > chi:
@@ -128,9 +136,9 @@ class TDVP2:
             
             if i != 1:
                 shpMi = self.MPS.M[i-1].shape
-                self.MPS.M[i-1] = local_exponentiation('H',self.MPS.M[i-1], self.LT[i-2],self.MPO.W[i-1], self.RT[i],-delta).reshape(shpMi)       
+                self.MPS.M[i-1] = local_exponentiation('H',self.MPS.M[i-1], self.LT[i-2],self.MPO.W[i-1], self.RT[i],-delta,krydim).reshape(shpMi)       
                 
-    def time_step(self, delta, etrunc):
+    def time_step(self, delta, etrunc, krydim=10):
         self.etrunc = etrunc
-        self.right_sweep(delta)
-        self.left_sweep(delta)
+        self.right_sweep(delta,krydim)
+        self.left_sweep(delta,krydim)

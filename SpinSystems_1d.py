@@ -11,8 +11,8 @@ def IsingMPO(L, h, J=1):
     
     # Building the local bulk MPO
     H = np.zeros([3,3,2,2])
-    H[0,0,:,:] = Id; H[2,2,:,:] = Id; H[2,0,:,:] = -h*Sz
-    H[1,0,:,:] = Sx; H[2,1,:,:]= -J*Sx
+    H[0,0,:,:] = Id; H[2,2,:,:] = Id; H[2,0,:,:] = -h*Sx
+    H[1,0,:,:] = Sz; H[2,1,:,:]= -J*Sz
 
     # Building the boundary MPOs
     HL = np.zeros((1,3,2,2))

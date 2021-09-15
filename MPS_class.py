@@ -116,12 +116,9 @@ class MPS:
         for idx in range(self.L):
             self.M[idx] = file_pointer[subgroup+'/'+str(idx)][...].copy()
             
-    
-def getAllUp(L,chi):
-    res = MPS(L,chi,2)
-    for x in range(1,L-1):
-        res.M[x] = np.zeros((chi,2,chi))
+def getAllUp(L):
+    res = MPS(L,2,2)
+    for x in range(L):
+        res.M[x] = np.zeros((1,2,1))
         res.M[x][0,0,0] = 1
-    res.M[0] = np.zeros((1,2,chi))
-    res.M[-1] = np.zeros((chi,2,1))
     return res
