@@ -31,8 +31,36 @@ class MPO:
        for i in range(self.L-1,0,-1):
            Rtemp = contract.contract_right(MPS.M[i], self.W[i], MPS.M[i].conj(), Rtemp)
        return contract.contract_right(MPS.M[0], self.W[0], MPS.M[0].conj(), Rtemp)[0][0][0]
+   
+    def compressMPO(self, err=0.):
+        L = self.L
+        for i in range(L-1):
+            W = self.W[i].transpose(0, 2, 3, 1)
+            shpW = W.shape
+            q, r = LA.qr(W.reshape(shpW[0]*shpW[1]*shpW[2],shpW[3]))
+            q = q.reshape(shpW[0],shpW[1],shpW[2],q.shape[1]).transpose(0, 3, 1, 2)
+            self.W[i] = q
+            self.W[i+1] = ncon([r,self.W[i+1]],[[-1,1],[1,-2,-3,-4]])
         
-
+        if False:
+            for i in range(L-1,0,-1):
+                W = self.W[i].transpose(0,2,3,1)
+                shpW = W.shape
+                U,S,V = LA.svd(W.reshape(shpW[0],shpW[1]*shpW[2]*shpW[3]),full_matrices=False)
+                #S /= np.linalg.norm(S)
+                #indices = np.where( (1-np.cumsum(S**2) < err ))[0]
+                #if len(indices)>0:
+                #    chi = indices[0]+1
+                #else:
+                #    chi = S.size
+                #if S.size > chi:
+                #    U = U[:,:chi]
+                #    S = S[:chi]
+                #    V =  V[:chi,:]
+                #S /= np.linalg.norm(S)
+                self.W[i] = V.reshape(S.size,shpW[1],shpW[2],shpW[3]).transpose(0,3,1,2)
+                self.W[i-1] = ncon([self.W[i-1],(U@np.diag(S))],[[-1,1,-3,-4],[1,-2]])
+        
 def getMzMPO(L):
     MzMPO = MPO(L,2)
     mz  = np.zeros((2,2,2,2)); mzl = np.zeros((1,2,2,2)); mzr = np.zeros((2,1,2,2))

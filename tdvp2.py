@@ -65,7 +65,7 @@ class TDVP2:
             
             M = psi.reshape(shpMi[0]*shpMi[1],shpMj[1]*shpMj[2])
             
-            U,S,V = LA.svd(M,full_matrices=False)
+            U,S,V = LA.svd(M, full_matrices=False)
             S /= np.linalg.norm(S)
             
             indices = np.where( (1-np.cumsum(S**2) < self.etrunc ))[0]
