@@ -50,7 +50,7 @@ class TDVP:
         for i in range(self.L):
             M = self.MPS.M[i]
             shpM = M.shape
-            psi = local_exponentiation('H',M, self.LT[i-1], self.MPO.W[i], self.RT[i+1],delta)
+            psi = local_exponentiation('H',M, self.LT[i-1], self.MPO.W[i], self.RT[i+1],-delta)
             
             M = psi.reshape(shpM[0]*shpM[1],shpM[2])
             
@@ -63,7 +63,7 @@ class TDVP:
                         
             if i != self.L-1:
                 C = np.diag(S)@V
-                psi   = local_exponentiation('Hfree',C, self.LT[i],' ', self.RT[i+1],-delta)
+                psi   = local_exponentiation('Hfree',C, self.LT[i],' ', self.RT[i+1],delta)
                 C = psi.reshape(C.shape)
                 self.MPS.M[i+1] = ncon([C, self.MPS.M[i+1]],[[-1,1],[1,-2,-3]])
             
@@ -72,7 +72,7 @@ class TDVP:
             M = self.MPS.M[i]
             shpM = M.shape
             
-            psi = local_exponentiation('H',M, self.LT[i-1], self.MPO.W[i], self.RT[i+1],delta)
+            psi = local_exponentiation('H',M, self.LT[i-1], self.MPO.W[i], self.RT[i+1],-delta)
             M = psi.reshape(shpM[0],shpM[1]*shpM[2])
             
             U,S,V = LA.svd(M,full_matrices=False)
@@ -83,7 +83,7 @@ class TDVP:
             
             if i != 0:
                 C = U@np.diag(S)
-                psi   = local_exponentiation('Hfree',C, self.LT[i-1],' ', self.RT[i],-delta)
+                psi   = local_exponentiation('Hfree',C, self.LT[i-1],' ', self.RT[i],delta)
                 C = psi.reshape(C.shape)
                 self.MPS.M[i-1] = ncon([self.MPS.M[i-1],C],[[-1,-2,1],[1,-3]])
                 

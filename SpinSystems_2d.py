@@ -16,12 +16,15 @@ def IsingMPO_2D(Lx, Ly, h=0., J=1):
         H[1, 0, :, :] = Sz
         for j in range(1, Ly):
                 H[1+j,j,:,:] = np.eye(2)
+        
         if i<(Ly*(Lx-1)):        
             H[-1,-2,:,:]  = -J*Sz
         else:
             H[-1,-2,:,:]  = np.eye(2)
+        
         if (i+1)%(Ly) != 0:
             H[-1,1,:,:]   = -J*Sz
+        
         H[-1,0,:,:]  = -h*Sx
         H[-1,-1,:,:] = np.eye(2)
         Ham.W[i] = H

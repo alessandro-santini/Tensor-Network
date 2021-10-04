@@ -42,22 +42,25 @@ class MPO:
             self.W[i] = q
             self.W[i+1] = ncon([r,self.W[i+1]],[[-1,1],[1,-2,-3,-4]])
         
-        if False:
-            for i in range(L-1,0,-1):
+        for i in range(L-1,0,-1):
                 W = self.W[i].transpose(0,2,3,1)
                 shpW = W.shape
                 U,S,V = LA.svd(W.reshape(shpW[0],shpW[1]*shpW[2]*shpW[3]),full_matrices=False)
-                #S /= np.linalg.norm(S)
-                #indices = np.where( (1-np.cumsum(S**2) < err ))[0]
-                #if len(indices)>0:
-                #    chi = indices[0]+1
-                #else:
-                #    chi = S.size
-                #if S.size > chi:
-                #    U = U[:,:chi]
-                #    S = S[:chi]
-                #    V =  V[:chi,:]
-                #S /= np.linalg.norm(S)
+                
+                s_norm = np.linalg.norm(S)
+                S /= np.linalg.norm(S)
+                indices = np.where( (1.-np.cumsum(S**2) < err ))[0]
+                if len(indices)>0:
+                    chi = indices[0]+1
+                else:
+                    chi = S.size
+                if S.size > chi:
+                    U = U[:,:chi]
+                    S = S[:chi]
+                    V =  V[:chi,:]
+                S /= np.linalg.norm(S)
+                S *= s_norm
+                
                 self.W[i] = V.reshape(S.size,shpW[1],shpW[2],shpW[3]).transpose(0,3,1,2)
                 self.W[i-1] = ncon([self.W[i-1],(U@np.diag(S))],[[-1,1,-3,-4],[1,-2]])
         

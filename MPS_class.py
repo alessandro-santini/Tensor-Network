@@ -102,7 +102,7 @@ class MPS:
             Mlist[i] =  U.reshape(shpM[0], shpM[1], S.size)
             if i!= self.L-1:
                 Mlist[i+1] = ncon([np.diag(S)@V, Mlist[i+1]],[[-1,1],[1,-2,-3]])
-            Sent[i] = (-S*np.log(S)).sum()
+            Sent[i] = (-S**2*np.log(S**2)).sum()
         return Sent
     
     def save_hdf5(self,file_pointer, n):
