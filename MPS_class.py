@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as LA
 from ncon import ncon
+from tenpy.linalg.svd_robust import svd
 
 class MPS:
     def __init__(self,L,chim,d):
@@ -62,7 +63,24 @@ class MPS:
             S /= LA.norm(S)
             self.M[i] =  U.reshape(shpM[0], shpM[1], S.size)
             self.M[i+1] = ncon([np.diag(S)@V, self.M[i+1]],[[-1,1],[1,-2,-3]])
-            
+    
+    def swap(self, i, chiMAX=512, etrunc=1e-10,center='i+1',info=True):
+        # CENTER HAS TO BE IN I1 OR I2
+        i1 = i; i2=i+1;
+        M1, M2 = self.M[i1], self.M[i2]
+        shpM1, shpM2 = M1.shape, M2.shape
+        Swapped_M1M2 = ncon([M1, M2], [[-1,-3,1],[1,-2,-4]]).reshape(shpM1[0]*shpM2[1],shpM1[1]*shpM2[2])
+        U,S,V = svdtruncate(Swapped_M1M2, etrunc, chiMAX,info)
+        if center == 'i+1':
+            M1 = (U).reshape(shpM1[0],shpM2[1],S.size)
+            M2 = (np.diag(S)@V).reshape(S.size,shpM1[1],shpM2[2])
+        elif center == 'i':
+            M1 = (U@np.diag(S)).reshape(shpM1[0],shpM2[1],S.size)
+            M2 = (V).reshape(S.size,shpM1[1],shpM2[2])
+        self.M[i1] = M1
+        self.M[i2] = M2        
+    
+    
     def mix_normalize(self, j):
         for i in range(0, j):
             M = self.M[i]
@@ -116,6 +134,25 @@ class MPS:
         for idx in range(self.L):
             self.M[idx] = file_pointer[subgroup+'/'+str(idx)][...].copy()
             
+def svdtruncate(mat,etrunc,chiMAX,info=True):
+    U,S,V = svd(mat,full_matrices=False)
+    S /= np.linalg.norm(S)
+    S = S[S>1e-16]
+    chi = S.size
+    if info == True:   
+        indices = np.where( (1-np.cumsum(S**2) < etrunc ))[0]
+        if len(indices) > 0:
+            chi = indices[0]+1
+        else:
+            chi = S.size
+        if chi > chiMAX:
+            chi = chiMAX
+    U = U[:,:chi]
+    S = S[:chi]
+    V = V[:chi,:]
+    S /= np.linalg.norm(S)
+    return U,S,V
+        
 def getAllUp(L):
     res = MPS(L,2,2)
     for x in range(L):
