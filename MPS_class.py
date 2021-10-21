@@ -80,7 +80,6 @@ class MPS:
         self.M[i1] = M1
         self.M[i2] = M2        
     
-    
     def mix_normalize(self, j):
         for i in range(0, j):
             M = self.M[i]

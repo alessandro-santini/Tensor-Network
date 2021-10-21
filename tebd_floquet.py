@@ -3,7 +3,6 @@ import MPO_class as MPO
 from ncon import ncon
 import numpy as np
 from scipy.linalg import expm
-import matplotlib.pyplot as plt
 
 def TEBD_evo(MPS_,Lx,Ly,J=1,epsilon=0.1,etrunc=0,chiMAX=256,chiMAXswap=256,info=True):
     L = Lx*Ly
