@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.linalg as LA
 from ncon import ncon
-from tenpy.linalg.svd_robust import svd
 
 class MPS:
     def __init__(self,L,chim,d):
@@ -134,7 +133,7 @@ class MPS:
             self.M[idx] = file_pointer[subgroup+'/'+str(idx)][...].copy()
             
 def svdtruncate(mat,etrunc,chiMAX,info=True):
-    U,S,V = svd(mat,full_matrices=False)
+    U,S,V = np.linalg.svd(mat,full_matrices=False)
     S /= np.linalg.norm(S)
     S = S[S>1e-16]
     chi = S.size
