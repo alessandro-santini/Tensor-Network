@@ -1,3 +1,3 @@
 # Tensor-Network
 
-TEBDD DOES NOT WORK
+TEBD DOES NOT WORK
