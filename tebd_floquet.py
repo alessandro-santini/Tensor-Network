@@ -3,7 +3,7 @@ import MPO_class as MPO
 from ncon import ncon
 import numpy as np
 from scipy.linalg import expm
-
+#%%
 def TEBD_evo(MPS_,Lx,Ly,J=1,epsilon=0.1,etrunc=0,chiMAX=256,chiMAXswap=256,info=True):
     L = Lx*Ly
     config = np.arange(0,L).reshape(Lx,Ly)
@@ -170,6 +170,15 @@ def H2_pbc1D(L, J=1):
         op2 += int_spin_op_construct(-J*sigma_z,sigma_z,i,(i+1)%L,L)
     return op2
 
+def H2_pbc1D_var(L, J=1):
+    sigma_z = sps.csc_matrix(np.array([[1,0],[0,-1]]))
+    op2 = 0
+    for i in range(1,L-1):
+        op2 += int_spin_op_construct(-J*sigma_z,sigma_z,i,(i+1),L)
+    op2 += spin_op_construct(-J*0.5*np.eye(2), L-1, L)    
+    op2 += spin_op_construct(-J*0.5*np.eye(2), 0, L)    
+    return op2
+
 Lx = 4;
 Ly = Lx;
 L  = Lx*Ly;
@@ -180,29 +189,33 @@ mz_config = np.zeros(D)
 for i,state in enumerate(np.vectorize(np.binary_repr)(np.arange(2**L),L)):
     mz_config[i] = (L-2*state.count('1'))/L
 
-Hdouble = H2_pbc(Lx,Ly,1.)
-Hdouble_1d = H2_pbc1D(L)
+Hdouble_1d  = H2_pbc1D(L)
+Hdouble_1dv = H2_pbc1D_var(L) 
 
 epsilon = 0.1
 
 Hsingle = H1(L,epsilon)
 psi0    = np.zeros(D)
 psi0[0] = 1
-psi     = [psi0]
+psi1dv  = [psi0]
 psi1d   = [psi0]
 for n in range(200):
     print(n,' ',end='')
-    psi.append(expm_multiply(-1j*Hsingle,expm_multiply(-1j*Hdouble,psi[-1])))
+    psi1dv.append(expm_multiply(-1j*Hsingle,expm_multiply(-1j*Hdouble_1dv,psi1dv[-1])))
     psi1d.append(expm_multiply(-1j*Hsingle,expm_multiply(-1j*Hdouble_1d,psi1d[-1])))
-psi = np.array(psi)
+#%%
+psi1dv = np.array(psi1dv)
 psi1d = np.array(psi1d)
 
-mag_ED = np.abs(psi)**2@mz_config.reshape(D,1)
+mag_ED = np.abs(psi1dv)**2@mz_config.reshape(D,1)
 mag_ED = mag_ED.reshape(mag_ED.size)
 
 mag_ED1d = np.abs(psi1d)**2@mz_config.reshape(D,1)
 mag_ED1d = mag_ED1d.reshape(mag_ED1d.size)
 
+
+plt.plot(np.abs(mag_ED))
+plt.plot(np.abs(mag_ED1d))
 #%%
 
 L1d = np.zeros(psi1d.shape[0])

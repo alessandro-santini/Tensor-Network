@@ -34,6 +34,7 @@ class MPO:
    
     def compressMPO(self, err=0.):
         L = self.L
+        Ws_old = self.W.copy()
         for i in range(L-1):
             W = self.W[i].transpose(0, 2, 3, 1)
             shpW = W.shape
@@ -63,7 +64,17 @@ class MPO:
                 
                 self.W[i] = V.reshape(S.size,shpW[1],shpW[2],shpW[3]).transpose(0,3,1,2)
                 self.W[i-1] = ncon([self.W[i-1],(U@np.diag(S))],[[-1,1,-3,-4],[1,-2]])
-        
+        ######################
+        ### Estimate Error ###
+        ######################
+        Rtemp_1 = np.ones((1,1))
+        Rtemp_2 = np.ones((1,1))
+        for i in range(L):
+            Rtemp_1 = ncon([Ws_old[i],Ws_old[i],Rtemp_1],[[1,-1,3,4],[2,-2,4,3],[1,2]])
+            Rtemp_2 = ncon([Ws_old[i],self.W[i],Rtemp_2],[[1,-1,3,4],[2,-2,4,3],[1,2]])
+        print('Err compression MPO',np.abs(Rtemp_1[0][0]-Rtemp_2[0][0])/np.abs(Rtemp_1[0][0]))
+            
+
 def getMzMPO(L):
     MzMPO = MPO(L,2)
     mz  = np.zeros((2,2,2,2)); mzl = np.zeros((1,2,2,2)); mzr = np.zeros((2,1,2,2))
@@ -121,6 +132,24 @@ def return_LocalMz(MPS):
     tempMPS = MPS_.MPS(L,2,2)
     tempMPS.M = MPS.M.copy()
     sigma_z  = np.array([[1, 0], [0,-1]])
+    mz = np.zeros(L,complex)
+    
+    mz[0] = ncon([tempMPS.M[0],sigma_z,tempMPS.M[0].conj()],[[1,2,3],[2,4],[1,4,3]])       
+    for i in range(L-1):
+            M = tempMPS.M[i]
+            shpM = M.shape
+            U, S, V = LA.svd(M.reshape(shpM[0]*shpM[1], shpM[2]), full_matrices=False)
+            S /= LA.norm(S)
+            tempMPS.M[i] =  U.reshape(shpM[0], shpM[1], S.size)
+            tempMPS.M[i+1] = ncon([np.diag(S)@V, tempMPS.M[i+1]],[[-1,1],[1,-2,-3]])            
+            mz[i+1] = ncon([tempMPS.M[i+1],sigma_z,tempMPS.M[i+1].conj()],[[1,2,3],[2,4],[1,4,3]])       
+    return mz
+
+def return_LocalMx(MPS):
+    L = MPS.L
+    tempMPS = MPS_.MPS(L,2,2)
+    tempMPS.M = MPS.M.copy()
+    sigma_z  = np.array([[0, 1], [1,0]])
     mz = np.zeros(L,complex)
     
     mz[0] = ncon([tempMPS.M[0],sigma_z,tempMPS.M[0].conj()],[[1,2,3],[2,4],[1,4,3]])       

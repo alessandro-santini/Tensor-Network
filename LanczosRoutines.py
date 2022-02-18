@@ -57,12 +57,6 @@ def lanczos_iteration(Afunc, vstart, numiter, ortho_info=False):
     # complete final iteration
     return (alpha, beta, V.T)
 
-def gram_schmidt(vectors):			
-    for g in range(p):
-        psi[:,p] = psi[:,p] - np.dot(psi[:,g],psi[:,p])*psi[:,g]
-        psi[:,p] = psi[:,p] / max(LA.norm(psi[:,p]),1e-16)
-    return np.array(basis)
-
 def expm_krylov_lanczos(Afunc, v, dt, numiter, ortho_info = True): 
     """
     Compute Krylov subspace approximation of the matrix exponential
@@ -82,6 +76,6 @@ def expm_krylov_lanczos(Afunc, v, dt, numiter, ortho_info = True):
     return np.dot(V, np.dot(u_hess, np.linalg.norm(v) * np.exp(dt*w_hess) * u_hess[0]))
 
 def optimize_lanczos(Afunc,v,numiter):
-    alpha, beta, V = lanczos_iteration(Afunc, v, numiter)
+    alpha, beta, V = lanczos_iteration(Afunc, v, numiter, ortho_info=True)
     eig, w = np.linalg.eigh(np.diag(alpha) + np.diag(beta,1) + np.diag(beta,-1))
     return V@w[:,0], eig[0]
